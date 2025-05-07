@@ -1,0 +1,1395 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+4. Repository files, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+<additional_info>
+
+</additional_info>
+
+</file_summary>
+
+<directory_structure>
+Portal/
+  Assets.xcassets/
+    AccentColor.colorset/
+      Contents.json
+    AppIcon.appiconset/
+      Contents.json
+    Contents.json
+  Models/
+    EnvironmentModel.swift
+  Services/
+    AudioService.swift
+    WeatherService.swift
+  ViewModels/
+    EnvironmentViewModel.swift
+    FavoritesViewModel.swift
+  Views/
+    EnvironmentView.swift
+    FavoritesView.swift
+    MainTabView.swift
+    SettingsView.swift
+    TimerModalView.swift
+  ContentView.swift
+  Persistence.swift
+  PortalApp.swift
+Portal.xcodeproj/
+  project.xcworkspace/
+    contents.xcworkspacedata
+  xcuserdata/
+    danielgao.xcuserdatad/
+      xcschemes/
+        xcschememanagement.plist
+  project.pbxproj
+PortalTests/
+  PortalTests.swift
+PortalUITests/
+  PortalUITests.swift
+  PortalUITestsLaunchTests.swift
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="Portal/Assets.xcassets/AccentColor.colorset/Contents.json">
+{
+  "colors" : [
+    {
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
+</file>
+
+<file path="Portal/Assets.xcassets/AppIcon.appiconset/Contents.json">
+{
+  "images" : [
+    {
+      "idiom" : "universal",
+      "platform" : "ios",
+      "size" : "1024x1024"
+    },
+    {
+      "appearances" : [
+        {
+          "appearance" : "luminosity",
+          "value" : "dark"
+        }
+      ],
+      "idiom" : "universal",
+      "platform" : "ios",
+      "size" : "1024x1024"
+    },
+    {
+      "appearances" : [
+        {
+          "appearance" : "luminosity",
+          "value" : "tinted"
+        }
+      ],
+      "idiom" : "universal",
+      "platform" : "ios",
+      "size" : "1024x1024"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
+</file>
+
+<file path="Portal/Assets.xcassets/Contents.json">
+{
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
+</file>
+
+<file path="Portal/Models/EnvironmentModel.swift">
+//  EnvironmentModel.swift
+//  Portal
+//
+//  Created by Daniel Gao on 5/7/25.
+
+import Foundation
+
+struct EnvironmentModel: Identifiable, Equatable {
+    let id: UUID
+    let name: String
+    let imageName: String
+    let sounds: [String]
+
+    init(id: UUID = UUID(), name: String, imageName: String, sounds: [String]) {
+        self.id = id
+        self.name = name
+        self.imageName = imageName
+        self.sounds = sounds
+    }
+}
+</file>
+
+<file path="Portal/Services/AudioService.swift">
+//  AudioService.swift
+//  Portal
+//
+//  Created by Daniel Gao on 5/6/25.
+
+import Foundation
+import AVFoundation
+
+class AudioService: ObservableObject {
+    @Published var players: [String: AVAudioPlayer] = [:]
+    
+    func play(sound: String) {
+        guard let url = Bundle.main.url(forResource: sound, withExtension: "mp3") else { return }
+        do {
+            let player = try AVAudioPlayer(contentsOf: url)
+            player.numberOfLoops = -1
+            player.play()
+            players[sound] = player
+        } catch {
+            print("Error playing sound: \(error)")
+        }
+    }
+    
+    func stop(sound: String) {
+        players[sound]?.stop()
+        players.removeValue(forKey: sound)
+    }
+    
+    func setVolume(sound: String, volume: Float) {
+        players[sound]?.volume = volume
+    }
+    
+    func stopAll() {
+        for player in players.values {
+            player.stop()
+        }
+        players.removeAll()
+    }
+}
+</file>
+
+<file path="Portal/Services/WeatherService.swift">
+//  WeatherService.swift
+//  Portal
+//
+//  Created by Daniel Gao on 5/6/25.
+
+import Foundation
+import CoreLocation
+
+class WeatherService: NSObject, ObservableObject, CLLocationManagerDelegate {
+    private let apiKey = "YOUR_OPENWEATHER_API_KEY" // <-- Replace with your real API key
+    private let manager = CLLocationManager()
+    @Published var currentWeather: String? = nil
+    
+    override init() {
+        super.init()
+        manager.delegate = self
+    }
+    
+    func requestWeather() {
+        manager.requestWhenInUseAuthorization()
+        manager.requestLocation()
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        guard let location = locations.first else { return }
+        fetchWeather(lat: location.coordinate.latitude, lon: location.coordinate.longitude)
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        print("Location error: \(error)")
+    }
+    
+    private func fetchWeather(lat: Double, lon: Double) {
+        let url = URL(string: "https://api.openweathermap.org/data/2.5/weather?lat=\(lat)&lon=\(lon)&appid=\(apiKey)&units=metric")!
+        URLSession.shared.dataTask(with: url) { data, response, error in
+            if let data = data {
+                if let weather = self.parseWeather(data: data) {
+                    DispatchQueue.main.async {
+                        self.currentWeather = weather
+                    }
+                }
+            }
+        }.resume()
+    }
+    
+    private func parseWeather(data: Data) -> String? {
+        if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let weatherArr = json["weather"] as? [[String: Any]],
+           let main = weatherArr.first?["main"] as? String {
+            return main
+        }
+        return nil
+    }
+}
+</file>
+
+<file path="Portal/ViewModels/EnvironmentViewModel.swift">
+//
+//  EnvironmentViewModel.swift
+//  Portal
+//
+//  Created by Daniel Gao on 5/6/25.
+//
+
+import Foundation
+
+class EnvironmentViewModel: ObservableObject {
+    @Published var environments: [EnvironmentModel] = [
+        EnvironmentModel(name: "Rainforest", imageName: "rainforest", sounds: ["rain", "birds"]),
+        EnvironmentModel(name: "Beach", imageName: "beach", sounds: ["waves", "seagulls"]),
+        EnvironmentModel(name: "Fireplace", imageName: "fireplace", sounds: ["fire", "wind"])
+    ]
+}
+</file>
+
+<file path="Portal/ViewModels/FavoritesViewModel.swift">
+//  FavoritesViewModel.swift
+//  Portal
+//
+//  Created by Daniel Gao on 5/6/25.
+
+import Foundation
+
+class FavoritesViewModel: ObservableObject {
+    @Published var favorites: [EnvironmentModel] = []
+
+    func fetchFavorites() {
+        // No-op for in-memory
+    }
+
+    func addFavorite(env: EnvironmentModel) {
+        if !favorites.contains(where: { $0.id == env.id }) {
+            favorites.append(env)
+        }
+    }
+
+    func removeFavorite(_ env: EnvironmentModel) {
+        if let index = favorites.firstIndex(where: { $0.id == env.id }) {
+            favorites.remove(at: index)
+        }
+    }
+}
+</file>
+
+<file path="Portal/Views/EnvironmentView.swift">
+//
+//  EnvironmentView.swift
+//  Portal
+//
+//  Created by Daniel Gao on 5/6/25.
+//
+
+import SwiftUI
+
+import AVKit
+
+struct EnvironmentView: View {
+    @StateObject private var audioService = AudioService()
+    @State private var rainVolume: Float = 0.5
+    @State private var birdsVolume: Float = 0.5
+    @State private var isPlaying = false
+
+    var body: some View {
+        ZStack {
+            // Placeholder for immersive visual (could use AVPlayerViewController for video)
+            Color.black.opacity(0.9)
+                .ignoresSafeArea()
+            VStack(spacing: 32) {
+                Image("rainforest") // Placeholder, should be dynamic
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: 240)
+                    .clipShape(RoundedRectangle(cornerRadius: 24))
+                Text("Rainforest") // Placeholder, should be dynamic
+                    .font(.largeTitle)
+                    .foregroundColor(.white)
+                VStack(spacing: 16) {
+                    HStack {
+                        Text("Rain")
+                            .foregroundColor(.white)
+                        Slider(value: Binding(get: {
+                            rainVolume
+                        }, set: { newVal in
+                            rainVolume = newVal
+                            audioService.setVolume(sound: "rain", volume: rainVolume)
+                        }), in: 0...1)
+                    }
+                    HStack {
+                        Text("Birds")
+                            .foregroundColor(.white)
+                        Slider(value: Binding(get: {
+                            birdsVolume
+                        }, set: { newVal in
+                            birdsVolume = newVal
+                            audioService.setVolume(sound: "birds", volume: birdsVolume)
+                        }), in: 0...1)
+                    }
+                }
+                HStack(spacing: 24) {
+                    Button(isPlaying ? "Stop" : "Play") {
+                        if isPlaying {
+                            audioService.stopAll()
+                        } else {
+                            audioService.play(sound: "rain")
+                            audioService.setVolume(sound: "rain", volume: rainVolume)
+                            audioService.play(sound: "birds")
+                            audioService.setVolume(sound: "birds", volume: birdsVolume)
+                        }
+                        isPlaying.toggle()
+                    }
+                    .padding()
+                    .background(isPlaying ? Color.red : Color.green)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
+                }
+                Spacer()
+            }
+            .padding()
+        }
+    }
+}
+</file>
+
+<file path="Portal/Views/FavoritesView.swift">
+//
+//  FavoritesView.swift
+//  Portal
+//
+//  Created by Daniel Gao on 5/6/25.
+//
+
+import SwiftUI
+
+struct FavoritesView: View {
+    @StateObject private var viewModel = FavoritesViewModel()
+    @State private var showEnvironment: Bool = false
+    @State private var selectedEnv: EnvironmentModel?
+
+    var body: some View {
+        NavigationStack {
+            VStack {
+                if viewModel.favorites.isEmpty {
+                    Text("No favorites yet.")
+                        .foregroundColor(.gray)
+                        .padding()
+                } else {
+                    List {
+                        ForEach(viewModel.favorites) { fav in
+                            HStack {
+                                Image(fav.imageName ?? "")
+                                    .resizable()
+                                    .frame(width: 60, height: 60)
+                                    .clipShape(Circle())
+                                Text(fav.name ?? "")
+                                    .font(.headline)
+                                Spacer()
+                                Button("Enter") {
+                                    selectedEnv = fav
+                                    showEnvironment = true
+                                }
+                                .buttonStyle(.borderedProminent)
+                                Button(role: .destructive) {
+                                    viewModel.removeFavorite(fav)
+                                } label: {
+                                    Image(systemName: "trash")
+                                }
+                            }
+                        }
+                    }
+                    .listStyle(.plain)
+                }
+            }
+            .navigationTitle("Favorites")
+            .onAppear { viewModel.fetchFavorites() }
+            .sheet(isPresented: $showEnvironment) {
+                // For MVP, just show EnvironmentView
+                EnvironmentView()
+            }
+        }
+    }
+}
+</file>
+
+<file path="Portal/Views/MainTabView.swift">
+//
+//  MainTabView.swift
+//  Portal
+//
+//  Created by Daniel Gao on 5/6/25.
+//
+
+import SwiftUI
+
+struct MainTabView: View {
+    var body: some View {
+        TabView {
+            ContentView()
+                .tabItem {
+                    Image(systemName: "house")
+                    Text("Home")
+                }
+
+            FavoritesView()
+                .tabItem {
+                    Image(systemName: "heart")
+                    Text("Favorites")
+                }
+
+            SettingsView()
+                .tabItem {
+                    Image(systemName: "gear")
+                    Text("Settings")
+                }
+        }
+    }
+}
+</file>
+
+<file path="Portal/Views/SettingsView.swift">
+//
+//  SettingsView.swift
+//  Portal
+//
+//  Created by Daniel Gao on 5/6/25.
+//
+
+import SwiftUI
+
+struct SettingsView: View {
+    @State private var weatherSync = false
+    @State private var spotifySync = false
+    @State private var darkMode = false
+    
+    var body: some View {
+        NavigationStack {
+            Form {
+                Toggle("Weather Sync", isOn: $weatherSync)
+                Toggle("Spotify Sync", isOn: $spotifySync)
+                Toggle("Dark Mode", isOn: $darkMode)
+            }
+            .navigationTitle("Settings")
+        }
+    }
+}
+</file>
+
+<file path="Portal/Views/TimerModalView.swift">
+//  TimerModalView.swift
+//  Portal
+//
+//  Created by Cascade AI on 5/6/25.
+
+import SwiftUI
+
+struct TimerModalView: View {
+    @Binding var isPresented: Bool
+    @State private var selectedTime = 5
+    @State private var timeRemaining = 0
+    @State private var timerActive = false
+    let times = [5, 10, 15]
+    
+    var body: some View {
+        VStack(spacing: 24) {
+            Text("Focus Timer")
+                .font(.title2)
+                .bold()
+            Picker("Minutes", selection: $selectedTime) {
+                ForEach(times, id: \.self) { t in
+                    Text("\(t) min")
+                }
+            }
+            .pickerStyle(.segmented)
+            if timerActive {
+                Text("Time Left: \(timeRemaining) s")
+                    .font(.title)
+            }
+            HStack(spacing: 24) {
+                Button(timerActive ? "Stop" : "Start") {
+                    if timerActive {
+                        timerActive = false
+                        timeRemaining = 0
+                    } else {
+                        timerActive = true
+                        timeRemaining = selectedTime * 60
+                        startTimer()
+                    }
+                }
+                .padding()
+                .background(timerActive ? Color.red : Color.green)
+                .foregroundColor(.white)
+                .cornerRadius(10)
+                Button("Close") {
+                    isPresented = false
+                }
+                .padding()
+            }
+        }
+        .padding()
+        .frame(width: 300)
+    }
+    
+    func startTimer() {
+        Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { timer in
+            if timerActive && timeRemaining > 0 {
+                timeRemaining -= 1
+            } else {
+                timer.invalidate()
+                timerActive = false
+            }
+        }
+    }
+}
+
+//#Preview {
+//    TimerModalView(isPresented: .constant(true))
+//}
+</file>
+
+<file path="Portal/ContentView.swift">
+//
+//  ContentView.swift
+//  Portal
+//
+//  Created by Daniel Gao on 5/5/25.
+//
+
+import SwiftUI
+
+struct ContentView: View {
+    @StateObject var viewModel = EnvironmentViewModel()
+    @StateObject var favoritesVM = FavoritesViewModel()
+    @State private var selectedIndex = 0
+    @State private var showTimer = false
+
+    var body: some View {
+        NavigationStack {
+            VStack {
+                TabView(selection: $selectedIndex) {
+                    ForEach(viewModel.environments.indices, id: \.self) { index in
+                        let env = viewModel.environments[index]
+                        VStack {
+                            Image(env.imageName)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(height: 300)
+                                .clipShape(Circle())
+
+                            Text(env.name)
+                                .font(.title)
+                                .padding(.top)
+
+                            NavigationLink("Enter", destination: EnvironmentView())
+                                .padding()
+                                .background(Color.blue)
+                                .foregroundColor(.white)
+                                .cornerRadius(10)
+                            Button(action: {
+                                let env = viewModel.environments[index]
+                                favoritesVM.addFavorite(env: env)
+                            }) {
+                                Image(systemName: "heart")
+                                    .foregroundColor(.pink)
+                            }
+                            .padding(.top, 8)
+                            Button("Timer") {
+                                showTimer = true
+                            }
+                            .padding(.top, 8)
+                        }
+                        .tag(index)
+                    }
+                }
+                .tabViewStyle(PageTabViewStyle())
+                .indexViewStyle(.page(backgroundDisplayMode: .interactive))
+                .frame(height: 500)
+            }
+            .navigationTitle("Portal")
+            .sheet(isPresented: $showTimer) {
+                TimerModalView(isPresented: $showTimer)
+            }
+        }
+    }
+}
+
+#Preview {
+    ContentView()
+}
+</file>
+
+<file path="Portal/Persistence.swift">
+//  Persistence.swift
+//  Portal
+//
+//  Created by Daniel Gao on 5/6/25.
+
+import CoreData
+
+struct PersistenceController {
+    static let shared = PersistenceController()
+    let container: NSPersistentContainer
+    init(inMemory: Bool = false) {
+        container = NSPersistentContainer(name: "Portal")
+        if inMemory {
+            container.persistentStoreDescriptions.first?.url = URL(fileURLWithPath: "/dev/null")
+        }
+        container.loadPersistentStores { _, error in
+            if let error = error as NSError? {
+                fatalError("Unresolved error \(error), \(error.userInfo)")
+            }
+        }
+    }
+}
+</file>
+
+<file path="Portal/PortalApp.swift">
+//
+//  PortalApp.swift
+//  Portal
+//
+//  Created by Daniel Gao on 5/5/25.
+//
+
+import SwiftUI
+
+@main
+struct PortalApp: App {
+    var body: some Scene {
+        WindowGroup {
+            MainTabView()
+        }
+    }
+}
+</file>
+
+<file path="Portal.xcodeproj/project.xcworkspace/contents.xcworkspacedata">
+<?xml version="1.0" encoding="UTF-8"?>
+<Workspace
+   version = "1.0">
+   <FileRef
+      location = "self:">
+   </FileRef>
+</Workspace>
+</file>
+
+<file path="Portal.xcodeproj/xcuserdata/danielgao.xcuserdatad/xcschemes/xcschememanagement.plist">
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>SchemeUserState</key>
+	<dict>
+		<key>Portal.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>0</integer>
+		</dict>
+	</dict>
+</dict>
+</plist>
+</file>
+
+<file path="Portal.xcodeproj/project.pbxproj">
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXContainerItemProxy section */
+		EAB773D22DC9DED100E5605E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = EAB773BC2DC9DED000E5605E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = EAB773C32DC9DED000E5605E;
+			remoteInfo = Portal;
+		};
+		EAB773DC2DC9DED100E5605E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = EAB773BC2DC9DED000E5605E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = EAB773C32DC9DED000E5605E;
+			remoteInfo = Portal;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		EAB773C42DC9DED000E5605E /* Portal.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Portal.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		EAB773D12DC9DED100E5605E /* PortalTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PortalTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		EAB773DB2DC9DED100E5605E /* PortalUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PortalUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		EAB773C62DC9DED000E5605E /* Portal */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Portal;
+			sourceTree = "<group>";
+		};
+		EAB773D42DC9DED100E5605E /* PortalTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = PortalTests;
+			sourceTree = "<group>";
+		};
+		EAB773DE2DC9DED100E5605E /* PortalUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = PortalUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		EAB773C12DC9DED000E5605E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EAB773CE2DC9DED100E5605E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EAB773D82DC9DED100E5605E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		EAB773BB2DC9DED000E5605E = {
+			isa = PBXGroup;
+			children = (
+				EAB773C62DC9DED000E5605E /* Portal */,
+				EAB773D42DC9DED100E5605E /* PortalTests */,
+				EAB773DE2DC9DED100E5605E /* PortalUITests */,
+				EAB773C52DC9DED000E5605E /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		EAB773C52DC9DED000E5605E /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				EAB773C42DC9DED000E5605E /* Portal.app */,
+				EAB773D12DC9DED100E5605E /* PortalTests.xctest */,
+				EAB773DB2DC9DED100E5605E /* PortalUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		EAB773C32DC9DED000E5605E /* Portal */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EAB773E52DC9DED100E5605E /* Build configuration list for PBXNativeTarget "Portal" */;
+			buildPhases = (
+				EAB773C02DC9DED000E5605E /* Sources */,
+				EAB773C12DC9DED000E5605E /* Frameworks */,
+				EAB773C22DC9DED000E5605E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				EAB773C62DC9DED000E5605E /* Portal */,
+			);
+			name = Portal;
+			packageProductDependencies = (
+			);
+			productName = Portal;
+			productReference = EAB773C42DC9DED000E5605E /* Portal.app */;
+			productType = "com.apple.product-type.application";
+		};
+		EAB773D02DC9DED100E5605E /* PortalTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EAB773E82DC9DED100E5605E /* Build configuration list for PBXNativeTarget "PortalTests" */;
+			buildPhases = (
+				EAB773CD2DC9DED100E5605E /* Sources */,
+				EAB773CE2DC9DED100E5605E /* Frameworks */,
+				EAB773CF2DC9DED100E5605E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				EAB773D32DC9DED100E5605E /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				EAB773D42DC9DED100E5605E /* PortalTests */,
+			);
+			name = PortalTests;
+			packageProductDependencies = (
+			);
+			productName = PortalTests;
+			productReference = EAB773D12DC9DED100E5605E /* PortalTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		EAB773DA2DC9DED100E5605E /* PortalUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EAB773EB2DC9DED100E5605E /* Build configuration list for PBXNativeTarget "PortalUITests" */;
+			buildPhases = (
+				EAB773D72DC9DED100E5605E /* Sources */,
+				EAB773D82DC9DED100E5605E /* Frameworks */,
+				EAB773D92DC9DED100E5605E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				EAB773DD2DC9DED100E5605E /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				EAB773DE2DC9DED100E5605E /* PortalUITests */,
+			);
+			name = PortalUITests;
+			packageProductDependencies = (
+			);
+			productName = PortalUITests;
+			productReference = EAB773DB2DC9DED100E5605E /* PortalUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		EAB773BC2DC9DED000E5605E /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1630;
+				LastUpgradeCheck = 1630;
+				TargetAttributes = {
+					EAB773C32DC9DED000E5605E = {
+						CreatedOnToolsVersion = 16.3;
+					};
+					EAB773D02DC9DED100E5605E = {
+						CreatedOnToolsVersion = 16.3;
+						TestTargetID = EAB773C32DC9DED000E5605E;
+					};
+					EAB773DA2DC9DED100E5605E = {
+						CreatedOnToolsVersion = 16.3;
+						TestTargetID = EAB773C32DC9DED000E5605E;
+					};
+				};
+			};
+			buildConfigurationList = EAB773BF2DC9DED000E5605E /* Build configuration list for PBXProject "Portal" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = EAB773BB2DC9DED000E5605E;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = EAB773C52DC9DED000E5605E /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				EAB773C32DC9DED000E5605E /* Portal */,
+				EAB773D02DC9DED100E5605E /* PortalTests */,
+				EAB773DA2DC9DED100E5605E /* PortalUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		EAB773C22DC9DED000E5605E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EAB773CF2DC9DED100E5605E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EAB773D92DC9DED100E5605E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		EAB773C02DC9DED000E5605E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EAB773CD2DC9DED100E5605E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EAB773D72DC9DED100E5605E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		EAB773D32DC9DED100E5605E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = EAB773C32DC9DED000E5605E /* Portal */;
+			targetProxy = EAB773D22DC9DED100E5605E /* PBXContainerItemProxy */;
+		};
+		EAB773DD2DC9DED100E5605E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = EAB773C32DC9DED000E5605E /* Portal */;
+			targetProxy = EAB773DC2DC9DED100E5605E /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		EAB773E32DC9DED100E5605E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		EAB773E42DC9DED100E5605E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		EAB773E62DC9DED100E5605E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Portal;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = edu.usc.Portal;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		EAB773E72DC9DED100E5605E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Portal;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = edu.usc.Portal;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		EAB773E92DC9DED100E5605E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = edu.usc.PortalTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Portal.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Portal";
+			};
+			name = Debug;
+		};
+		EAB773EA2DC9DED100E5605E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = edu.usc.PortalTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Portal.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Portal";
+			};
+			name = Release;
+		};
+		EAB773EC2DC9DED100E5605E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = edu.usc.PortalUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Portal;
+			};
+			name = Debug;
+		};
+		EAB773ED2DC9DED100E5605E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = edu.usc.PortalUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Portal;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		EAB773BF2DC9DED000E5605E /* Build configuration list for PBXProject "Portal" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EAB773E32DC9DED100E5605E /* Debug */,
+				EAB773E42DC9DED100E5605E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		EAB773E52DC9DED100E5605E /* Build configuration list for PBXNativeTarget "Portal" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EAB773E62DC9DED100E5605E /* Debug */,
+				EAB773E72DC9DED100E5605E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		EAB773E82DC9DED100E5605E /* Build configuration list for PBXNativeTarget "PortalTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EAB773E92DC9DED100E5605E /* Debug */,
+				EAB773EA2DC9DED100E5605E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		EAB773EB2DC9DED100E5605E /* Build configuration list for PBXNativeTarget "PortalUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EAB773EC2DC9DED100E5605E /* Debug */,
+				EAB773ED2DC9DED100E5605E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = EAB773BC2DC9DED000E5605E /* Project object */;
+}
+</file>
+
+<file path="PortalTests/PortalTests.swift">
+//
+//  PortalTests.swift
+//  PortalTests
+//
+//  Created by Daniel Gao on 5/5/25.
+//
+
+import Testing
+@testable import Portal
+
+struct PortalTests {
+
+    @Test func example() async throws {
+        // Write your test here and use APIs like `#expect(...)` to check expected conditions.
+    }
+
+}
+</file>
+
+<file path="PortalUITests/PortalUITests.swift">
+//
+//  PortalUITests.swift
+//  PortalUITests
+//
+//  Created by Daniel Gao on 5/5/25.
+//
+
+import XCTest
+
+final class PortalUITests: XCTestCase {
+
+    override func setUpWithError() throws {
+        // Put setup code here. This method is called before the invocation of each test method in the class.
+
+        // In UI tests it is usually best to stop immediately when a failure occurs.
+        continueAfterFailure = false
+
+        // In UI tests it’s important to set the initial state - such as interface orientation - required for your tests before they run. The setUp method is a good place to do this.
+    }
+
+    override func tearDownWithError() throws {
+        // Put teardown code here. This method is called after the invocation of each test method in the class.
+    }
+
+    @MainActor
+    func testExample() throws {
+        // UI tests must launch the application that they test.
+        let app = XCUIApplication()
+        app.launch()
+
+        // Use XCTAssert and related functions to verify your tests produce the correct results.
+    }
+
+    @MainActor
+    func testLaunchPerformance() throws {
+        // This measures how long it takes to launch your application.
+        measure(metrics: [XCTApplicationLaunchMetric()]) {
+            XCUIApplication().launch()
+        }
+    }
+}
+</file>
+
+<file path="PortalUITests/PortalUITestsLaunchTests.swift">
+//
+//  PortalUITestsLaunchTests.swift
+//  PortalUITests
+//
+//  Created by Daniel Gao on 5/5/25.
+//
+
+import XCTest
+
+final class PortalUITestsLaunchTests: XCTestCase {
+
+    override class var runsForEachTargetApplicationUIConfiguration: Bool {
+        true
+    }
+
+    override func setUpWithError() throws {
+        continueAfterFailure = false
+    }
+
+    @MainActor
+    func testLaunch() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        // Insert steps here to perform after app launch but before taking a screenshot,
+        // such as logging into a test account or navigating somewhere in the app
+
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = "Launch Screen"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+}
+</file>
+
+</files>
