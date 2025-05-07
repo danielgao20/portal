@@ -1,0 +1,2 @@
+###
+Portal is a calming iOS app that allows users to step into immersive virtual environments for stress relief, focus, and relaxation. Each environment transports the user with ambient visuals, layered soundscapes (like ocean waves, forest rain, or cozy fireplace crackles), and music integration. Designed for students, remote workers, and anyone seeking an escape from digital noise, Portal helps users reclaim calm moments throughout their day. Environments adapt to user preferences, moods, and even local weather.
