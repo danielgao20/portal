@@ -23,8 +23,7 @@ struct FavoritesView: View {
                     List {
                         ForEach(viewModel.favorites) { fav in
     HStack {
-        Image(fav.imageName)
-            .resizable()
+        UnsplashImageView(query: fav.name)
             .frame(width: 60, height: 60)
             .clipShape(Circle())
         Text(fav.name)

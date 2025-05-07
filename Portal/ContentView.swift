@@ -46,11 +46,11 @@ struct ContentView: View {
                     ForEach(viewModel.environments.indices, id: \.self) { index in
                         let env = viewModel.environments[index]
                         VStack {
-                            Image(env.imageName)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(height: 300)
-                                .clipShape(Circle())
+                            UnsplashImageView(query: env.name)
+                                .frame(height: 220)
+                                .clipShape(RoundedRectangle(cornerRadius: 24))
+                                .shadow(radius: 12)
+                                .padding(.vertical)
 
                             Text(env.name)
                                 .font(.title)
