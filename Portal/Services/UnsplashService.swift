@@ -11,8 +11,14 @@ class UnsplashService: ObservableObject {
     
     @Published var imageUrl: URL? = nil
     private var currentTask: URLSessionDataTask?
+    private let cache = UnsplashCache.shared
     
     func fetchImage(for query: String) {
+        // Check cache first
+        if let cachedUrl = cache.url(for: query) {
+            self.imageUrl = cachedUrl
+            return
+        }
         currentTask?.cancel()
         let queryEscaped = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
         let urlString = "https://api.unsplash.com/photos/random?query=\(queryEscaped)&orientation=landscape&client_id=\(accessKey)"
@@ -25,9 +31,15 @@ class UnsplashService: ObservableObject {
                let imageUrl = URL(string: raw) {
                 DispatchQueue.main.async {
                     self.imageUrl = imageUrl
+                    self.cache.set(url: imageUrl, for: query)
                 }
             }
         }
         currentTask?.resume()
     }
+    
+    func clearCache() {
+        cache.clear()
+    }
 }
+

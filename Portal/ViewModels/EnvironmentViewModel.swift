@@ -7,8 +7,9 @@
 
 import Foundation
 import Combine
+import CoreLocation
 
-class EnvironmentViewModel: ObservableObject {
+class EnvironmentViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     @Published var environments: [EnvironmentModel] = [
         EnvironmentModel(id: UUID(uuidString: "11111111-1111-1111-1111-111111111111")!, name: "Rainforest", imageName: "rainforest", sounds: ["rain", "birds"]),
         EnvironmentModel(id: UUID(uuidString: "22222222-2222-2222-2222-222222222222")!, name: "Beach", imageName: "beach", sounds: ["waves", "seagulls"]),
@@ -17,10 +18,14 @@ class EnvironmentViewModel: ObservableObject {
     
     @Published var suggestedEnvironment: EnvironmentModel? = nil
     @Published var currentWeather: String? = nil
+    @Published var currentLocation: CLLocationCoordinate2D? = nil
     
+    private var locationManager: CLLocationManager?
     private var weatherService = WeatherService()
+    private var cancellables: Set<AnyCancellable> = []
     
-    init() {
+    override init() {
+        super.init()
         // Observe weather changes
         weatherService.$currentWeather
             .receive(on: DispatchQueue.main)
@@ -31,10 +36,33 @@ class EnvironmentViewModel: ObservableObject {
             .store(in: &cancellables)
     }
     
-    private var cancellables: Set<AnyCancellable> = []
-    
     func syncWeather() {
+        requestLocation()
         weatherService.requestWeather()
+    }
+    
+    func requestLocation() {
+        if locationManager == nil {
+            locationManager = CLLocationManager()
+            locationManager?.delegate = self
+        }
+        locationManager?.requestWhenInUseAuthorization()
+        locationManager?.requestLocation()
+    }
+    
+    // CLLocationManagerDelegate
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        if let loc = locations.last {
+            DispatchQueue.main.async {
+                self.currentLocation = loc.coordinate
+            }
+        }
+    }
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        // Fallback to LA if location fails
+        DispatchQueue.main.async {
+            self.currentLocation = CLLocationCoordinate2D(latitude: 34.0522, longitude: -118.2437)
+        }
     }
     
     private func environmentForWeather(_ weather: String?) -> EnvironmentModel? {

@@ -6,44 +6,66 @@
 //
 
 import SwiftUI
-
+import CoreLocation
 import Combine
 
 struct ContentView: View {
     @StateObject var viewModel = EnvironmentViewModel()
     @EnvironmentObject var favoritesVM: FavoritesViewModel
-    @State private var selectedIndex = 0
+    @State private var selectedIndex = -1
     @State private var showTimer = false
     @State private var showSuggestedEnv = false
+    @State private var mapCoordinate = CLLocationCoordinate2D(latitude: 34.0522, longitude: -118.2437)
 
     var body: some View {
         NavigationStack {
-            VStack {
-                // Weather suggestion banner
-                if let suggested = viewModel.suggestedEnvironment {
-                    Button(action: { showSuggestedEnv = true }) {
-                        HStack {
-                            Image(systemName: "cloud.sun.rain")
-                                .foregroundColor(.blue)
-                            Text("Suggested: \(suggested.name) based on weather")
-                                .foregroundColor(.primary)
-                            Spacer()
-                        }
-                        .padding()
-                        .background(Color.yellow.opacity(0.3))
-                        .cornerRadius(10)
-                    }
-                    .sheet(isPresented: $showSuggestedEnv) {
-                        EnvironmentView(environment: suggested)
-                    }
-                }
-                Button("Sync Weather") {
-                    viewModel.syncWeather()
-                }
-                .padding(.bottom, 8)
-
+            VStack(spacing: 0) {
                 TabView(selection: $selectedIndex) {
-                    ForEach(viewModel.environments.indices, id: \.self) { index in
+                    // First slide: Weather sync & suggestion with map
+                    VStack(spacing: 24) {
+                        Button("Sync Weather") {
+                            viewModel.syncWeather()
+                            // Try to get user location, else fallback to default
+                            if let loc = viewModel.currentLocation {
+                                mapCoordinate = loc
+                            } else {
+                                mapCoordinate = CLLocationCoordinate2D(latitude: 34.0522, longitude: -118.2437)
+                            }
+                        }
+                        .font(.title2)
+                        .padding()
+                        .background(Color.blue.opacity(0.8))
+                        .foregroundColor(.white)
+                        .cornerRadius(12)
+
+                        if let suggested = viewModel.suggestedEnvironment {
+                            HStack {
+                                Image(systemName: "cloud.sun.rain")
+                                    .foregroundColor(.blue)
+                                Text("Suggested: \(suggested.name) based on weather")
+                                    .foregroundColor(.primary)
+                                Spacer()
+                            }
+                            .padding()
+                            .background(Color.yellow.opacity(0.3))
+                            .cornerRadius(10)
+                        }
+
+                        Text("Your Location")
+                            .font(.headline)
+                            .padding(.top)
+                        MapKitView(coordinate: mapCoordinate)
+                            .frame(height: 220)
+                            .clipShape(RoundedRectangle(cornerRadius: 18))
+                            .shadow(radius: 8)
+                            .padding(.horizontal)
+                        Spacer()
+                    }
+                    .padding(.top, 32)
+                    .tag(-1)
+
+                    // Remaining slides: Environments
+                    ForEach(viewModel.environments.indices, id: \ .self) { index in
                         let env = viewModel.environments[index]
                         VStack {
                             UnsplashImageView(query: env.name)

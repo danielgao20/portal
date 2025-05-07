@@ -8,6 +8,7 @@ import SwiftUI
 struct UnsplashImageView: View {
     let query: String
     @StateObject private var unsplashService = UnsplashService()
+    @State private var imageLoaded = false
     
     var body: some View {
         Group {
@@ -22,7 +23,10 @@ struct UnsplashImageView: View {
             }
         }
         .onAppear {
-            unsplashService.fetchImage(for: query)
+            if !imageLoaded {
+                unsplashService.fetchImage(for: query)
+                imageLoaded = true
+            }
         }
     }
 }

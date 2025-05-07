@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-
+import CoreLocation
 import AVKit
 
 struct EnvironmentView: View {
@@ -66,6 +66,10 @@ struct EnvironmentView: View {
                     .cornerRadius(10)
                 }
                 Spacer()
+                // Journaling prompt bar (appears at the bottom after entering environment)
+                if let loc = CLLocationManager().location?.coordinate {
+                    JournalingPromptBar(environment: .constant(environment.name), location: .constant(loc))
+                }
             }
             .padding()
             .onAppear {
