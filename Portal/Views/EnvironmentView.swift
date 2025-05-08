@@ -1,10 +1,3 @@
-//
-//  EnvironmentView.swift
-//  Portal
-//
-//  Created by Daniel Gao on 5/6/25.
-//
-
 import SwiftUI
 import CoreLocation
 import AVKit
@@ -15,6 +8,9 @@ struct EnvironmentView: View {
     @State private var soundVolumes: [String: Float] = [:]
     @State private var isPlaying = false
     
+    // Default location if not available
+    @State private var currentLocation: CLLocationCoordinate2D = CLLocationCoordinate2D(latitude: 34.0522, longitude: -118.2437)
+
     private func initializeVolumes() {
         // Default to 0.5 for each sound if not already set
         for sound in environment.sounds {
@@ -65,17 +61,22 @@ struct EnvironmentView: View {
                     .foregroundColor(.white)
                     .cornerRadius(10)
                 }
+                
+                // render JournalingPromptBar with default location fallback
+                JournalingPromptBar(environment: .constant(environment.name), location: .constant(currentLocation))
+                    .padding(.bottom, 12)
+                
                 Spacer()
-                // Journaling prompt bar (appears at the bottom after entering environment)
-                if let loc = CLLocationManager().location?.coordinate {
-                    JournalingPromptBar(environment: .constant(environment.name), location: .constant(loc))
-                }
             }
             .padding()
             .onAppear {
                 initializeVolumes()
+                
+                // try to get the user location
+                if let loc = CLLocationManager().location?.coordinate {
+                    currentLocation = loc
+                }
             }
         }
     }
 }
-

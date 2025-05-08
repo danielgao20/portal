@@ -5,6 +5,8 @@
 
 import SwiftUI
 
+// timer modal for focus sessions
+// timer modal ui
 struct TimerModalView: View {
     @Binding var isPresented: Bool
     @State private var selectedTime = 5

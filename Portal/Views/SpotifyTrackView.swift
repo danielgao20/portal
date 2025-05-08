@@ -1,10 +1,12 @@
 import SwiftUI
 
+// spotify track view for playback and auth
 struct SpotifyTrackView: View {
     @ObservedObject var auth = SpotifyAuthService.shared
     
     var body: some View {
         VStack(spacing: 24) {
+            // show refresh and logout if authenticated
             if let track = auth.currentTrack {
                 VStack(spacing: 12) {
                     if let url = track.album.images.first?.url, let imgURL = URL(string: url) {
@@ -46,6 +48,7 @@ struct SpotifyTrackView: View {
                     .buttonStyle(.bordered)
                     .font(.title3)
                 }
+            // show message if no track or error
             } else if let message = auth.noTrackMessage {
                 Text(message)
                     .font(.headline)

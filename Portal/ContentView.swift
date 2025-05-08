@@ -25,7 +25,7 @@ struct ContentView: View {
                     VStack(spacing: 24) {
                         Button("Sync Weather") {
                             viewModel.syncWeather()
-                            // Try to get user location, else fallback to default
+                            // get user location or fallback to default
                             if let loc = viewModel.currentLocation {
                                 mapCoordinate = loc
                             } else {
@@ -38,6 +38,7 @@ struct ContentView: View {
                         .foregroundColor(.white)
                         .cornerRadius(12)
 
+                        // show suggested environment if available
                         if let suggested = viewModel.suggestedEnvironment {
                             HStack {
                                 Image(systemName: "cloud.sun.rain")
@@ -64,7 +65,7 @@ struct ContentView: View {
                     .padding(.top, 32)
                     .tag(-1)
 
-                    // Remaining slides: Environments
+                    // remaining slides: Environments
                     ForEach(viewModel.environments.indices, id: \ .self) { index in
                         let env = viewModel.environments[index]
                         VStack {

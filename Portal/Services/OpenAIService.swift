@@ -28,21 +28,21 @@ class OpenAIService {
         
         // Construct the prompt
         let prompt = """
-        Given the user's current environment: \(environment) and location (lat: \(location.latitude), lon: \(location.longitude)), suggest a thoughtful journaling prompt for self-reflection.
+        You are surrounded by the atmosphere of a beautiful \(environment). Reflect on how this setting makes you feel. What thoughts or memories does it bring to mind? Consider how the sights, sounds, and ambiance influence your mood and perspective.
         """
-        
+                
         // OpenAI expects an array of message objects
         let messages: [[String: String]] = [
-            ["role": "system", "content": "You are a helpful assistant that generates journaling prompts based on context."],
+            ["role": "system", "content": "You are a helpful assistant that generates thoughtful journaling prompts inspired by the user's surroundings and emotional context."],
             ["role": "user", "content": prompt]
         ]
-        
+
         // Create the request body
         let body: [String: Any] = [
             "model": "gpt-4-turbo",
             "messages": messages,
-            "max_tokens": 60,
-            "temperature": 0.7
+            "max_tokens": 100,  // Increased for more expressive prompts
+            "temperature": 0.8  // Slightly higher for more creative suggestions
         ]
         
         

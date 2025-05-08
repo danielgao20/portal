@@ -6,10 +6,13 @@
 import SwiftUI
 import AVKit
 
+// visual soundscape video player
+// wraps avplayercontroller for swiftui
 struct VisualSoundscapeView: UIViewControllerRepresentable {
     let videoName: String // e.g. "rainforest_visual"
     let videoExtension: String = "mp4"
     
+    // create avplayercontroller and loop video
     func makeUIViewController(context: Context) -> AVPlayerViewController {
         let controller = AVPlayerViewController()
         if let url = Bundle.main.url(forResource: videoName, withExtension: videoExtension) {
@@ -27,7 +30,7 @@ struct VisualSoundscapeView: UIViewControllerRepresentable {
         return controller
     }
     
+    // no-op for now (could update video if environment changes)
     func updateUIViewController(_ uiViewController: AVPlayerViewController, context: Context) {
-        // No-op for now (could update video if environment changes)
     }
 }

@@ -1,6 +1,6 @@
 import Foundation
 import AuthenticationServices
-import CommonCrypto // For PKCE SHA256 hashing
+import CommonCrypto
 
 class SpotifyAuthService: NSObject, ObservableObject, ASWebAuthenticationPresentationContextProviding {
     static let shared = SpotifyAuthService()
@@ -15,7 +15,7 @@ class SpotifyAuthService: NSObject, ObservableObject, ASWebAuthenticationPresent
     private var session: ASWebAuthenticationSession?
     private var codeVerifier: String?
 
-    // MARK: PKCE helpers
+    // pkce helpers
     private func generateCodeVerifier() -> String {
         let chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~"
         return String((0..<128).map { _ in chars.randomElement()! })
@@ -38,7 +38,7 @@ class SpotifyAuthService: NSObject, ObservableObject, ASWebAuthenticationPresent
         struct Album: Codable { let images: [Image]; struct Image: Codable { let url: String } }
     }
 
-    // MARK: - Playback Controls
+    // playback control endpoints
     @MainActor
     func play() async {
         await controlPlayback(endpoint: "play")
@@ -78,7 +78,7 @@ class SpotifyAuthService: NSObject, ObservableObject, ASWebAuthenticationPresent
     }
 
     func startAuth() {
-        // Generate PKCE code verifier and challenge
+        // start oauth with pkce
         let verifier = generateCodeVerifier()
         let challenge = codeChallenge(for: verifier)
         self.codeVerifier = verifier
@@ -160,9 +160,6 @@ class SpotifyAuthService: NSObject, ObservableObject, ASWebAuthenticationPresent
         }.resume()
     }
     
-    // No longer needed (implicit grant removed)
-    // func parseToken(from fragment: String) -> String? { ... }
-    
     func fetchCurrentlyPlaying() {
         guard let token = accessToken else { return }
         var request = URLRequest(url: URL(string: "https://api.spotify.com/v1/me/player/currently-playing")!)
@@ -221,9 +218,9 @@ class SpotifyAuthService: NSObject, ObservableObject, ASWebAuthenticationPresent
         return try? JSONDecoder().decode(Response.self, from: data).item
     }
     
-    // Required for ASWebAuthenticationPresentationContextProviding
+    // required for ASWebAuthenticationPresentationContextProviding
     func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
-        // Use UIWindowScene for iOS 15+ compatibility
+        // return presentation anchor for auth session
         return UIApplication.shared
             .connectedScenes
             .compactMap { $0 as? UIWindowScene }
