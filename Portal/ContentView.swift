@@ -95,10 +95,10 @@ struct ContentView: View {
                                     .foregroundColor(.pink)
                             }
                             .padding(.top, 8)
-                            Button("Timer") {
-                                showTimer = true
-                            }
-                            .padding(.top, 8)
+                            // Button("Timer") {
+                            //     showTimer = true
+                            // }
+                            // .padding(.top, 8)
                         }
                         .tag(index)
                     }
@@ -108,9 +108,9 @@ struct ContentView: View {
                 .frame(height: 500)
             }
             .navigationTitle("Portal")
-            .sheet(isPresented: $showTimer) {
-                TimerModalView(isPresented: $showTimer)
-            }
+            // .sheet(isPresented: $showTimer) {
+            //     TimerModalView(isPresented: $showTimer)
+            // }
         }
     }
 }

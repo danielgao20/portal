@@ -1,7 +1,7 @@
 //  VisualSoundscapeView.swift
 //  Portal
 //
-//  Created by Cascade AI
+//  Created by Daniel Gao on 5/6/25.
 
 import SwiftUI
 import AVKit

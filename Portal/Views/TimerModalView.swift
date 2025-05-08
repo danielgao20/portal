@@ -1,7 +1,7 @@
 //  TimerModalView.swift
 //  Portal
 //
-//  Created by Cascade AI on 5/6/25.
+//  Created by Daniel Gao on 5/6/25.
 
 import SwiftUI
 

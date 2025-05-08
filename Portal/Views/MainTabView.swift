@@ -22,10 +22,10 @@ struct MainTabView: View {
                     Text("Favorites")
                 }
 
-            SettingsView()
+            SpotifyTrackView()
                 .tabItem {
-                    Image(systemName: "gear")
-                    Text("Settings")
+                    Image(systemName: "music.note")
+                    Text("Spotify")
                 }
         }
     }
